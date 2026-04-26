@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+
+  nginx-proxy:
+    build: ./nginx-proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
