@@ -21,7 +21,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .map(user -> {
                     UserBuilder builder = User.builder()
                             .username(user.getEmail())
-                            .password(user.getPassword())
+                            .password(user.getPassword() != null ? user.getPassword() : "")
                             .roles(user.getRole().name());
                     return builder.build();
                 })

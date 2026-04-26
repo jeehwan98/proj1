@@ -3,6 +3,7 @@ package com.jee.backend.service;
 import com.jee.backend.dto.LoginRequest;
 import com.jee.backend.dto.PendingRegistration;
 import com.jee.backend.dto.RegisterRequest;
+import com.jee.backend.entity.AuthProvider;
 import com.jee.backend.entity.User;
 import com.jee.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,11 @@ public class AuthService {
     public User login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User doesn't exist"));
+
+        if (user.getProvider() != AuthProvider.LOCAL) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "This account uses " + user.getProvider().name().toLowerCase() + " login");
+        }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
