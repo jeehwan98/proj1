@@ -1,13 +1,14 @@
 package com.jee.backend.security;
 
+import com.jee.backend.entity.AuthProvider;
 import com.jee.backend.entity.User;
 import com.jee.backend.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -31,11 +32,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = oAuth2User.getAttribute("email");
+        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        OAuth2User oAuth2User = oauthToken.getPrincipal();
+        AuthProvider provider = AuthProvider.valueOf(oauthToken.getAuthorizedClientRegistrationId().toUpperCase());
+        String providerId = oAuth2User.getName();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("User not found after OAuth2 login: " + email));
+        User user = userRepository.findByProviderAndProviderId(provider, providerId)
+                .orElseThrow(() -> new IllegalStateException("User not found after OAuth2 login: " + provider + "/" + providerId));
 
         response.addHeader(HttpHeaders.SET_COOKIE, jwtUtil.generateAccessCookie(user).toString());
         response.addHeader(HttpHeaders.SET_COOKIE, jwtUtil.generateRefreshCookie(user).toString());

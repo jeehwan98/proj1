@@ -4,6 +4,10 @@ import com.jee.backend.entity.AuthProvider;
 import com.jee.backend.entity.User;
 import com.jee.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -11,12 +15,17 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
     @Transactional
@@ -27,6 +36,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
 
         String email = oAuth2User.getAttribute("email");
+
+        if ((email == null || email.isBlank()) && "github".equals(registrationId)) {
+            email = fetchGitHubPrimaryEmail(request.getAccessToken().getTokenValue());
+        }
+
         if (email == null || email.isBlank()) {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("email_not_found"),
@@ -36,8 +50,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String name = extractName(registrationId, oAuth2User);
         String providerId = oAuth2User.getName();
+        final String resolvedEmail = email;
 
-        userRepository.findByEmail(email).ifPresentOrElse(
+        userRepository.findByEmail(resolvedEmail).ifPresentOrElse(
                 existing -> {
                     if (existing.getProviderId() == null) {
                         existing.linkProvider(provider, providerId);
@@ -46,7 +61,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 () -> userRepository.save(
                         User.builder()
                                 .name(name)
-                                .email(email)
+                                .email(resolvedEmail)
                                 .provider(provider)
                                 .providerId(providerId)
                                 .build()
@@ -54,6 +69,28 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         );
 
         return oAuth2User;
+    }
+
+    private String fetchGitHubPrimaryEmail(String accessToken) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(accessToken);
+            var response = restTemplate.exchange(
+                    "https://api.github.com/user/emails",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+            );
+            List<Map<String, Object>> emails = response.getBody();
+            if (emails == null) return null;
+            return emails.stream()
+                    .filter(e -> Boolean.TRUE.equals(e.get("primary")) && Boolean.TRUE.equals(e.get("verified")))
+                    .map(e -> (String) e.get("email"))
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String extractName(String registrationId, OAuth2User user) {

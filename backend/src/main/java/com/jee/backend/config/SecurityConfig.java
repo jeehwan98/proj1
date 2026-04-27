@@ -1,6 +1,7 @@
 package com.jee.backend.config;
 
 import com.jee.backend.security.CustomOAuth2UserService;
+import com.jee.backend.security.CustomOidcUserService;
 import com.jee.backend.security.JwtAuthFilter;
 import com.jee.backend.security.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -11,11 +12,15 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -29,15 +34,24 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOidcUserService customOidcUserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        AuthenticationEntryPoint entryPoint = new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);
+
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 // IF_REQUIRED: allows sessions only for the OAuth2 handshake; JWT endpoints remain cookie-based
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                // Never save/replay requests — prevents Spring from redirecting after OAuth2 success
+                .requestCache(cache -> cache.requestCache(new NullRequestCache()))
+                // Return 401 for unauthenticated API calls instead of redirecting to /login
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(entryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/*").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
@@ -45,7 +59,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(endpoint -> endpoint
-                                .userService(customOAuth2UserService))
+                                .userService(customOAuth2UserService)
+                                .oidcUserService(customOidcUserService))
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler((request, response, exception) ->
                                 response.sendRedirect("/register?error=" + exception.getMessage())))
