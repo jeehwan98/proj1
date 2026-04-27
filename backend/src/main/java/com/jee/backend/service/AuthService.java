@@ -6,20 +6,25 @@ import com.jee.backend.dto.RegisterRequest;
 import com.jee.backend.entity.AuthProvider;
 import com.jee.backend.entity.User;
 import com.jee.backend.repository.UserRepository;
+import com.jee.backend.security.JwtUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordService passwordService;
     private final EmailVerificationService emailVerificationService;
 
     public void register(RegisterRequest request) {
@@ -50,10 +55,29 @@ public class AuthService {
                     "This account uses " + user.getProvider().name().toLowerCase() + " login");
         }
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!passwordService.matches(request.password(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         return user;
+    }
+
+    public String validateRefreshTokenFromRequest(HttpServletRequest request) {
+        String refreshToken = extractCookie(request, "refresh-token");
+
+        if (refreshToken == null || !jwtUtil.isValid(refreshToken, "refresh")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+
+        return refreshToken;
+    }
+
+    private String extractCookie(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> name.equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

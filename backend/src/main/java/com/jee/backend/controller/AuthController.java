@@ -1,13 +1,15 @@
 package com.jee.backend.controller;
 
+import com.jee.backend.dto.ForgotPasswordRequest;
 import com.jee.backend.dto.LoginRequest;
 import com.jee.backend.dto.RegisterRequest;
+import com.jee.backend.dto.ResetPasswordRequest;
 import com.jee.backend.dto.VerifyRequest;
 import com.jee.backend.entity.User;
-import com.jee.backend.repository.UserRepository;
 import com.jee.backend.security.JwtUtil;
 import com.jee.backend.service.AuthService;
-import jakarta.servlet.http.Cookie;
+import com.jee.backend.service.PasswordService;
+import com.jee.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +17,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Arrays;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,8 +24,9 @@ import java.util.Arrays;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+    private final PasswordService passwordService;
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
 
     @PostMapping("/register")
     ResponseEntity<Void> register(@RequestBody RegisterRequest request) {
@@ -50,17 +50,22 @@ public class AuthController {
 
     @PostMapping("/refresh")
     ResponseEntity<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = extractCookie(request, "refresh-token");
-
-        if (refreshToken == null || !jwtUtil.isValid(refreshToken, "refresh")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
-        }
-
+        String refreshToken = authService.validateRefreshTokenFromRequest(request);
         String email = jwtUtil.extractClaims(refreshToken).getSubject();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-
+        User user = userService.getUserByEmail(email);
         response.addHeader(HttpHeaders.SET_COOKIE, jwtUtil.generateAccessCookie(user).toString());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/forgot-password")
+    ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        passwordService.sendResetCode(request.email());
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/reset-password")
+    ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        passwordService.resetPassword(request.email(), request.code(), request.newPassword());
         return ResponseEntity.ok().build();
     }
 
@@ -69,14 +74,5 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, jwtUtil.clearAccessCookie().toString());
         response.addHeader(HttpHeaders.SET_COOKIE, jwtUtil.clearRefreshCookie().toString());
         return ResponseEntity.ok().build();
-    }
-
-    private String extractCookie(HttpServletRequest request, String name) {
-        if (request.getCookies() == null) return null;
-        return Arrays.stream(request.getCookies())
-                .filter(c -> name.equals(c.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
     }
 }

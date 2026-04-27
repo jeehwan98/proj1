@@ -9,7 +9,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -25,13 +24,13 @@ public class EmailVerificationService {
 
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordService passwordService;
     private final MailProperties mailProperties;
     private final ObjectMapper objectMapper;
 
     public void sendCode(RegisterRequest request) {
         String code = String.format("%06d", new SecureRandom().nextInt(1_000_000));
-        String encodedPassword = passwordEncoder.encode(request.password());
+        String encodedPassword = passwordService.encodePassword(request.password());
         PendingRegistration pending = new PendingRegistration(request.name(), encodedPassword, code);
 
         try {
