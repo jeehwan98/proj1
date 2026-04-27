@@ -41,6 +41,10 @@ public class User {
         this.role = role;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }

@@ -8,9 +8,36 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost/api
 
+  backend:
+    build: ./backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+
   nginx-proxy:
     build: ./nginx-proxy
     ports:
       - "80:80"
     depends_on:
       - frontend
+      - backend
+
+volumes:
+  postgres_data:

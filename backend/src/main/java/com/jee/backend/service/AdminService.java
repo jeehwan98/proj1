@@ -20,6 +20,7 @@ import java.util.Objects;
 public class AdminService {
 
     private final UserRepository userRepository;
+    private final UserService userService;
 
     public Page<UserResponse> getUsers(Pageable pageable) {
         return userRepository.findAll(Objects.requireNonNull(pageable))
@@ -27,19 +28,21 @@ public class AdminService {
     }
 
     @Transactional
-    public void updateRole(Long userId, Role role) {
-        User user = userRepository.findById(Objects.requireNonNull(userId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    public void updateName(Long userId, String name) {
+        User user = userService.findUserByIdOrThrow(userId);
+        user.updateName(name);
+    }
 
+    @Transactional
+    public void updateRole(Long userId, Role role) {
+        User user = userService.findUserByIdOrThrow(userId);
         user.assignRole(role);
     }
 
     @Transactional
     public void deleteUser(Long userId) {
-        if (!userRepository.existsById(Objects.requireNonNull(userId))) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
-        userRepository.deleteById(userId);
+        User user = userService.findUserByIdOrThrow(userId);
+        userRepository.delete(user);
     }
 
 }
