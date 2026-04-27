@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[data-theme="light"] {
+  --page: #f9fafb;
+  --surface: #ffffff;
+  --line: #f3f4f6;
+  --line-strong: #e5e7eb;
+  --line-input: #d1d5db;
+  --ink: #111827;
+  --ink-mid: #374151;
+  --ink-light: #6b7280;
+  --ink-faint: #9ca3af;
+  --accent: #111827;
+  --accent-hover: #374151;
+  --accent-fg: #ffffff;
+  --ring: #111827;
+}
+
+[data-theme="dark"] {
+  --page: #0f172a;
+  --surface: #1e293b;
+  --line: #1e293b;
+  --line-strong: #334155;
+  --line-input: #475569;
+  --ink: #f8fafc;
+  --ink-mid: #cbd5e1;
+  --ink-light: #94a3b8;
+  --ink-faint: #64748b;
+  --accent: #f8fafc;
+  --accent-hover: #e2e8f0;
+  --accent-fg: #0f172a;
+  --ring: #94a3b8;
+}
