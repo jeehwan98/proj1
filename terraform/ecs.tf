@@ -68,12 +68,12 @@ resource "aws_ecs_task_definition" "backend" {
     secrets = [
       { name = "SPRING_DATASOURCE_PASSWORD", valueFrom = aws_secretsmanager_secret.db_password.arn },
       { name = "JWT_SECRET",                 valueFrom = aws_secretsmanager_secret.jwt_secret.arn },
-      { name = "SMTP_USERNAME",              valueFrom = "${aws_secretsmanager_secret.smtp.arn}:username::" },
-      { name = "SMTP_PASSWORD",              valueFrom = "${aws_secretsmanager_secret.smtp.arn}:password::" },
-      { name = "GITHUB_CLIENT_ID",           valueFrom = "${aws_secretsmanager_secret.github_oauth.arn}:client_id::" },
-      { name = "GITHUB_CLIENT_SECRET",       valueFrom = "${aws_secretsmanager_secret.github_oauth.arn}:client_secret::" },
-      { name = "GOOGLE_CLIENT_ID",           valueFrom = "${aws_secretsmanager_secret.google_oauth.arn}:client_id::" },
-      { name = "GOOGLE_CLIENT_SECRET",       valueFrom = "${aws_secretsmanager_secret.google_oauth.arn}:client_secret::" },
+      { name = "SMTP_USERNAME",        valueFrom = aws_secretsmanager_secret.smtp_username.arn },
+      { name = "SMTP_PASSWORD",        valueFrom = aws_secretsmanager_secret.smtp_password.arn },
+      { name = "GITHUB_CLIENT_ID",     valueFrom = aws_secretsmanager_secret.github_client_id.arn },
+      { name = "GITHUB_CLIENT_SECRET", valueFrom = aws_secretsmanager_secret.github_client_secret.arn },
+      { name = "GOOGLE_CLIENT_ID",     valueFrom = aws_secretsmanager_secret.google_client_id.arn },
+      { name = "GOOGLE_CLIENT_SECRET", valueFrom = aws_secretsmanager_secret.google_client_secret.arn },
     ]
 
     logConfiguration = {

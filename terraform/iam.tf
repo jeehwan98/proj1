@@ -49,9 +49,12 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
       Resource = [
         aws_secretsmanager_secret.db_password.arn,
         aws_secretsmanager_secret.jwt_secret.arn,
-        aws_secretsmanager_secret.smtp.arn,
-        aws_secretsmanager_secret.github_oauth.arn,
-        aws_secretsmanager_secret.google_oauth.arn,
+        aws_secretsmanager_secret.smtp_username.arn,
+        aws_secretsmanager_secret.smtp_password.arn,
+        aws_secretsmanager_secret.github_client_id.arn,
+        aws_secretsmanager_secret.github_client_secret.arn,
+        aws_secretsmanager_secret.google_client_id.arn,
+        aws_secretsmanager_secret.google_client_secret.arn,
       ]
     }]
   })

@@ -54,47 +54,71 @@ resource "aws_secretsmanager_secret_version" "jwt_secret" {
   secret_string = random_password.jwt_secret.result
 }
 
-# SMTP credentials (from variables)
-resource "aws_secretsmanager_secret" "smtp" {
-  name                    = "${local.name_prefix}/smtp"
+# SMTP credentials — stored as separate flat secrets (avoids unreliable JSON key extraction)
+resource "aws_secretsmanager_secret" "smtp_username" {
+  name                    = "${local.name_prefix}/smtp-username"
   recovery_window_in_days = 0
   tags                    = local.common_tags
 }
 
-resource "aws_secretsmanager_secret_version" "smtp" {
-  secret_id = aws_secretsmanager_secret.smtp.id
-  secret_string = jsonencode({
-    username = var.smtp_username
-    password = var.smtp_password
-  })
+resource "aws_secretsmanager_secret_version" "smtp_username" {
+  secret_id     = aws_secretsmanager_secret.smtp_username.id
+  secret_string = var.smtp_username
+}
+
+resource "aws_secretsmanager_secret" "smtp_password" {
+  name                    = "${local.name_prefix}/smtp-password"
+  recovery_window_in_days = 0
+  tags                    = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "smtp_password" {
+  secret_id     = aws_secretsmanager_secret.smtp_password.id
+  secret_string = var.smtp_password
 }
 
 # GitHub OAuth2 credentials
-resource "aws_secretsmanager_secret" "github_oauth" {
-  name                    = "${local.name_prefix}/github-oauth"
+resource "aws_secretsmanager_secret" "github_client_id" {
+  name                    = "${local.name_prefix}/github-client-id"
   recovery_window_in_days = 0
   tags                    = local.common_tags
 }
 
-resource "aws_secretsmanager_secret_version" "github_oauth" {
-  secret_id = aws_secretsmanager_secret.github_oauth.id
-  secret_string = jsonencode({
-    client_id     = var.github_client_id
-    client_secret = var.github_client_secret
-  })
+resource "aws_secretsmanager_secret_version" "github_client_id" {
+  secret_id     = aws_secretsmanager_secret.github_client_id.id
+  secret_string = var.github_client_id
+}
+
+resource "aws_secretsmanager_secret" "github_client_secret" {
+  name                    = "${local.name_prefix}/github-client-secret"
+  recovery_window_in_days = 0
+  tags                    = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "github_client_secret" {
+  secret_id     = aws_secretsmanager_secret.github_client_secret.id
+  secret_string = var.github_client_secret
 }
 
 # Google OAuth2 credentials
-resource "aws_secretsmanager_secret" "google_oauth" {
-  name                    = "${local.name_prefix}/google-oauth"
+resource "aws_secretsmanager_secret" "google_client_id" {
+  name                    = "${local.name_prefix}/google-client-id"
   recovery_window_in_days = 0
   tags                    = local.common_tags
 }
 
-resource "aws_secretsmanager_secret_version" "google_oauth" {
-  secret_id = aws_secretsmanager_secret.google_oauth.id
-  secret_string = jsonencode({
-    client_id     = var.google_client_id
-    client_secret = var.google_client_secret
-  })
+resource "aws_secretsmanager_secret_version" "google_client_id" {
+  secret_id     = aws_secretsmanager_secret.google_client_id.id
+  secret_string = var.google_client_id
+}
+
+resource "aws_secretsmanager_secret" "google_client_secret" {
+  name                    = "${local.name_prefix}/google-client-secret"
+  recovery_window_in_days = 0
+  tags                    = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "google_client_secret" {
+  secret_id     = aws_secretsmanager_secret.google_client_secret.id
+  secret_string = var.google_client_secret
 }
