@@ -1,0 +1,98 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REGISTRY: 136492549638.dkr.ecr.ap-southeast-1.amazonaws.com
+  ECS_CLUSTER: auth24-prod-cluster
+
+jobs:
+  # Detects which parts of the codebase changed
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  deploy-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend image
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ env.ECR_REGISTRY }}/auth24-prod-backend:latest \
+            -t ${{ env.ECR_REGISTRY }}/auth24-prod-backend:${{ github.sha }} \
+            ./backend
+          docker push ${{ env.ECR_REGISTRY }}/auth24-prod-backend:latest
+          docker push ${{ env.ECR_REGISTRY }}/auth24-prod-backend:${{ github.sha }}
+
+      - name: Force ECS redeployment
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service auth24-prod-backend \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+  deploy-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push frontend image
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ env.ECR_REGISTRY }}/auth24-prod-frontend:latest \
+            -t ${{ env.ECR_REGISTRY }}/auth24-prod-frontend:${{ github.sha }} \
+            ./frontend
+          docker push ${{ env.ECR_REGISTRY }}/auth24-prod-frontend:latest
+          docker push ${{ env.ECR_REGISTRY }}/auth24-prod-frontend:${{ github.sha }}
+
+      - name: Force ECS redeployment
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service auth24-prod-frontend \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
