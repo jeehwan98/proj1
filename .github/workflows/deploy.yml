@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ap-southeast-1
   ECR_REGISTRY: 136492549638.dkr.ecr.ap-southeast-1.amazonaws.com
