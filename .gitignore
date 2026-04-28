@@ -1,0 +1,17 @@
+# Terraform
+terraform/terraform.tfvars
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+
+# Frontend
+frontend/.next/
+frontend/node_modules/
+
+# Backend
+backend/target/
+backend/src/main/resources/application.yml
+
+# Environment files
+.env
+.env.*
