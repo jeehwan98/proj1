@@ -1,89 +1,139 @@
+# Defines everything that can vary between environments or that shouldn't be harcoded
+# sensitive = true - means Terraform won't print their values in terminal output
+# backend_image and frontend_image - start as empty - we fill them in after we build and push our Docker images to ECR for the first time
 variable "aws_region" {
-  description = "AWS Region"
+  description = "AWS region"
   type        = string
   default     = "ap-southeast-1"
 }
 
-variable "app_name" {
-  description = "Application Name"
+variable "project" {
+  description = "Project name used in resource naming"
   type        = string
-  default     = "jee"
+  default     = "auth24"
 }
 
 variable "environment" {
-  description = "Environment"
+  description = "Deployment environment"
   type        = string
   default     = "prod"
 }
 
 variable "domain_name" {
-  description = "domain"
+  description = "Root domain name"
   type        = string
-
+  default     = "authentication24.com"
 }
 
-variable "google_client_id" {
-  description = "Google OAuth 2.0 Client ID"
+# VPC
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
   type        = string
-  sensitive   = true
+  default     = "10.0.0.0/16"
 }
 
-variable "google_client_secret" {
-  description = "Google OAuth 2.0 Client Secret"
+# RDS
+variable "db_name" {
+  description = "PostgreSQL database name"
   type        = string
-  sensitive   = true
+  default     = "auth24db"
+}
+
+variable "db_username" {
+  description = "PostgreSQL master username"
+  type        = string
+  default     = "auth24user"
 }
 
 variable "db_instance_class" {
-  description = "RDS Instance Class"
+  description = "RDS instance type"
   type        = string
   default     = "db.t3.micro"
 }
 
-variable "smtp_user" {
-  description = "Gmail STMP Account"
-  type        = string
-  sensitive   = true
-}
-
-variable "smtp_password" {
-  description = "Gmail App Password"
-  type        = string
-  sensitive   = true
-}
-
-variable "google_service_account_json" {
-  description = "Google Service Account JSON entire content"
-  type        = string
-  sensitive   = true
-}
-
-variable "app_cpu" {
-  description = "App ECS CPU unit"
-  type        = number
-  default     = 1024
-}
-
-variable "app_memory" {
-  description = "value"
-  type        = number
-  default     = 2048
-}
-
+# ECS
 variable "backend_image" {
-  description = "Backend ECR Image URI (if left empty, the default ECR URL would be used)"
+  description = "Full ECR image URI for the backend (set after first docker push)"
   type        = string
   default     = ""
 }
 
 variable "frontend_image" {
-  description = "Frontend ECR Image URI (if left empty, the default ECR URL would be used)"
+  description = "Full ECR image URI for the frontend (set after first docker push)"
   type        = string
   default     = ""
 }
 
-variable "lambda_email_sender_image" {
-  description = "Lambda email sender ECR Image URI (if left empty, the default ECR URL would be used)"
+variable "backend_cpu" {
+  description = "CPU units for the backend container"
+  type        = number
+  default     = 256
+}
+
+variable "backend_memory" {
+  description = "Memory (MB) for the backend container"
+  type        = number
+  default     = 512
+}
+
+variable "frontend_cpu" {
+  description = "CPU units for the frontend container"
+  type        = number
+  default     = 256
+}
+
+variable "frontend_memory" {
+  description = "Memory (MB) for the frontend container"
+  type        = number
+  default     = 512
+}
+
+# Email (SMTP for password reset)
+variable "smtp_host" {
+  description = "SMTP host"
   type        = string
-  default     = ""
+  default     = "smtp.gmail.com"
+}
+
+variable "smtp_port" {
+  description = "SMTP port"
+  type        = number
+  default     = 587
+}
+
+variable "smtp_username" {
+  description = "SMTP username (email address)"
+  type        = string
+  sensitive   = true
+}
+
+variable "smtp_password" {
+  description = "SMTP password or app password"
+  type        = string
+  sensitive   = true
+}
+
+# OAuth2
+variable "github_client_id" {
+  description = "GitHub OAuth2 client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_client_secret" {
+  description = "GitHub OAuth2 client secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_client_id" {
+  description = "Google OAuth2 client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth2 client secret"
+  type        = string
+  sensitive   = true
 }
